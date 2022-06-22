@@ -9,6 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 matplotlib.use("Agg")
 
 
@@ -34,7 +35,6 @@ def build(input_size, latent_dim):
     return autoencoder
 
 
-# autoencoder = build(1000, 128)
 adt = pd.read_csv("GSE100866_CBMC_8K_13AB_10X-ADT_umi.csv.gz", sep=",", skiprows=1, header=None)
 rna = pd.read_csv("GSE100866_CBMC_8K_13AB_10X-RNA_umi.csv.gz", sep=",", skiprows=1, header=None)
 both = adt.append(rna, ignore_index=True)
@@ -45,9 +45,11 @@ both.drop(both.columns[0], axis=1, inplace=True)
 both = both.apply(zscore)
 data = both.to_numpy().T
 autoencoder = build(len(features), 128)
+# autoencoder = tf.keras.models.load_model("autoencoder.h5")
 autoencoder.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(lr=1e-4))
-callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-autoencoder.fit(data, data, epochs=10, batch_size=16, validation_split=0.1, callbacks=[callback])
+callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=4, restore_best_weights=True)
+autoencoder.fit(data, data, epochs=100, batch_size=16, validation_split=0.1, callbacks=[callback])
+autoencoder.save("autoencoder.h5")
 encoder = autoencoder.get_layer("encoder")
 latent = encoder.predict(np.asarray(data))
 np.savetxt("latent.csv", latent, delimiter=",", fmt="%s")
@@ -59,14 +61,16 @@ def pcc(a, b):
     return 1 - v
 
 
-chosen_perts = []
-latent_vectors = TSNE(n_components=2, random_state=0, perplexity=5, metric=pcc).fit_transform(latent_vectors)
+# latent_vectors = TSNE(n_components=2, random_state=0, perplexity=5, metric=pcc).fit_transform(latent_vectors)
+pca = PCA(n_components=2)
+latent_vectors = pca.fit_transform(latent_vectors)
 fig, axs = plt.subplots(1,1,figsize=(8,4))
-sns.scatterplot(x=latent_vectors[:, 0], y=latent_vectors[:, 1], s=20, alpha=0.2, ax=axs)
+print("Plotting")
+sns.scatterplot(x=latent_vectors[:, 0], y=latent_vectors[:, 1], s=5, alpha=0.2, ax=axs)
 axs.set_title("Latent space")
-axs.set_xlabel("t-SNE1")
-axs.set_ylabel("t-SNE2")
+axs.set_xlabel("PCA1")
+axs.set_ylabel("PCA2")
 plt.tight_layout()
-plt.savefig("tsne.png")
+plt.savefig("PCA.png")
 
 
