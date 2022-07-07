@@ -36,13 +36,14 @@ def build(input_size, latent_dim):
     return autoencoder
 
 
-# adt = pd.read_csv("GSE100866_CBMC_8K_13AB_10X-ADT_umi.csv.gz", sep=",", skiprows=1, header=None)
-# rna = pd.read_csv("GSE100866_CBMC_8K_13AB_10X-RNA_umi.csv.gz", sep=",", skiprows=1, header=None)
-# both = adt.append(rna, ignore_index=True)
-# features = both.iloc[:, 0]
-# print(f"Features: {len(features)}")
-# print(f"Cells: {len(both.iloc[0, :])}")
-# both.drop(both.columns[0], axis=1, inplace=True)
+adt = pd.read_csv("GSE100866_CBMC_8K_13AB_10X-ADT_umi.csv.gz", sep=",", skiprows=1, header=None)
+rna = pd.read_csv("GSE100866_CBMC_8K_13AB_10X-RNA_umi.csv.gz", sep=",", skiprows=1, header=None)
+both = adt.append(rna, ignore_index=True)
+features = both.iloc[:, 0]
+print(f"Features: {len(features)}")
+print(f"Cells: {len(both.iloc[0, :])}")
+both.drop(both.columns[0], axis=1, inplace=True)
+both.to_csv("data_merged.tsv", sep='\t')
 # both = both.apply(zscore)
 # data = both.to_numpy().T
 # autoencoder = build(len(features), 128)
@@ -67,6 +68,7 @@ def pcc(a, b):
 # latent_vectors = pca.fit_transform(latent_vectors)
 reducer = umap.UMAP()
 latent_vectors = reducer.fit_transform(latent_vectors)
+np.savetxt("umap.csv", latent_vectors, delimiter=",", fmt="%s")
 fig, axs = plt.subplots(1,1,figsize=(8,4))
 print("Plotting")
 sns.scatterplot(x=latent_vectors[:, 0], y=latent_vectors[:, 1], s=5, alpha=0.2, ax=axs)
